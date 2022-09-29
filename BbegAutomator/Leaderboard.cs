@@ -11,12 +11,12 @@ namespace BbegAutomator
 	{
 		public List<BbegLeaderboardRecord> Leaderboard { get; } = new List<BbegLeaderboardRecord>();
 
-		public void UpdateUser(string username, int pointsToAdd)
+		public void UpdateUser(ulong id, int pointsToAdd)
 		{
-			var user = Leaderboard.FirstOrDefault(r => string.CompareOrdinal(username, r.Username) == 0);
+			var user = Leaderboard.FirstOrDefault(r => r.Id == id);
 			if (user == null)
 			{
-				Leaderboard.Add(new BbegLeaderboardRecord(username, pointsToAdd));
+				Leaderboard.Add(new BbegLeaderboardRecord(id, pointsToAdd));
 			}
 			else
 			{
