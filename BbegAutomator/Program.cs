@@ -8,12 +8,8 @@ namespace BbegAutomator
 {
 	public class Program
 	{
+		//TODO: store this data in the config file
 		private DiscordSocketClient _client;
-		private const int DeleteMessagesCount = 3;
-		private const ulong BumpChannelId = 1023588758068662352;
-		private const ulong BbegChannelId = 1024724677328900106;
-		private const ulong BumpBotId = 1023365731523498034;
-		private const ulong BumpCommandId = 0;
 
 		private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
@@ -43,14 +39,16 @@ namespace BbegAutomator
 		}
 
 		private async Task OnMessageReceived(SocketMessage message)
-		{ 
+		{
+			var config = await Config.GetConfig();
+			
 			//Checking if the user has used the bump command
 			if (message.Interaction == null) return;
-			if (message.Channel.Id != BumpChannelId) return;
-			if (message.Interaction.Id != BumpCommandId) return;
+			if (message.Channel.Id != config.BumpChannelId) return;
+			if (message.Interaction.Id != config.BumpCommandId) return;
 			await Console.Out.WriteLineAsync($"{message.Interaction.User.Username} used the bump command!!");
 			
-			await BbegLeaderboard.UpdateLeaderboardsAsync(_client, BumpChannelId, BumpBotId, BumpCommandId);
+			await BbegLeaderboard.UpdateLeaderboardsAsync(_client);
 		}
 	}
 }
