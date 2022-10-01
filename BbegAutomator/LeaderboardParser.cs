@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Discord.Rest;
 
 namespace BbegAutomator
 {
@@ -30,7 +29,7 @@ namespace BbegAutomator
 			foreach(string line in lines)
 			{
 				var record = ParseLine(line);
-				leaderboard.Leaderboard.Add(record);
+				leaderboard.UpdateUser(record.Id, record.Points);
 			}
 
 			return leaderboard;

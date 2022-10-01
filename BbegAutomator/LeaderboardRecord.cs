@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace BbegAutomator
+﻿namespace BbegAutomator
 {
 	public class BbegLeaderboardRecord
 	{
