@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -11,6 +10,7 @@ namespace BbegAutomator
 		//TODO: store this data in the config file
 		private DiscordSocketClient _client;
 
+		//TODO: crash the program if an exception occurs 
 		private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
 		private async Task MainAsync()
@@ -18,14 +18,12 @@ namespace BbegAutomator
 			_client = new DiscordSocketClient();
 			_client.Log += Log;
 
-			string token = await File.ReadAllTextAsync("token.txt");
-
-			//TODO: its unoptimized to do it this way, there isnt a reason to listen for every message, another event like SlashCommandExecuted should be used
+			//TODO: its unoptimized to do it this way, there isn't a reason to listen for every message, another event like SlashCommandExecuted should be used
 			_client.MessageReceived += OnMessageReceived;
 			//_client.SlashCommandExecuted += SlashCommandHandler;
 
 
-			await _client.LoginAsync(TokenType.Bot, token);
+			await _client.LoginAsync(TokenType.Bot, (await Config.GetConfig()).BotToken);
 			await _client.StartAsync();
 
 			// Block this task until the program is closed.
@@ -45,10 +43,9 @@ namespace BbegAutomator
 			//Checking if the user has used the bump command
 			if (message.Interaction == null) return;
 			if (message.Channel.Id != config.BumpChannelId) return;
-			if (message.Interaction.Id != config.BumpCommandId) return;
-			await Console.Out.WriteLineAsync($"{message.Interaction.User.Username} used the bump command!!");
+			await Console.Out.WriteLineAsync($"{message.Interaction.User.Username} used a command in the bump channel!!");
 			
-			await BbegLeaderboard.UpdateLeaderboardsAsync(_client);
+			await Leaderboard.UpdateLeaderboardsAsync(_client);
 		}
 	}
 }

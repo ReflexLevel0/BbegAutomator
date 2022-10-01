@@ -6,14 +6,24 @@ namespace BbegAutomator
 {
 	public class Config
 	{
-		public ulong BumpChannelId = 1023588758068662352;
-		public ulong BbegChannelId = 1024724677328900106;
-		public ulong BumpBotId = 1023365731523498034;
-		public ulong BumpCommandId = 0;
+		public readonly ulong BumpChannelId;
+		public readonly ulong BbegChannelId;
+		public readonly ulong BumpBotId;
+		public readonly string BumpCommandString;
+		public readonly string BotToken;
+
+		public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken)
+		{
+			BumpChannelId = bumpChannelId;
+			BbegChannelId = bbegChannelId;
+			BumpBotId = bumpBotId;
+			BumpCommandString = bumpCommandString;
+			BotToken = botToken;
+		}
 
 		public static async Task<Config> GetConfig()
 		{
-			return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync("config.json"));
+			return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync("appsettings.json"));
 		}
 	}
 }

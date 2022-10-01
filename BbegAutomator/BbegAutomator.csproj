@@ -11,9 +11,19 @@
 
     <ItemGroup>
       <None Remove="token.txt" />
-      <EmbeddedResource Include="token.txt">
+      <None Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="appsettings.json" />
+      <EmbeddedResource Include="appsettings.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
+      <EmbeddedResource Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="data\**" />
     </ItemGroup>
 
 </Project>

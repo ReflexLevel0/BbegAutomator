@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BbegAutomator
 {
-	public static class BbegLeaderboardParser
+	public static class LeaderboardParser
 	{
-		public static BbegLeaderboardRecord ParseLine(string line)
+		public static LeaderboardRecord ParseLine(string line)
 		{
 			string[] parts = line.Split(" ");
-			return new BbegLeaderboardRecord(Convert.ToUInt64(parts[0]), Convert.ToInt32(parts[1]));
+			return new LeaderboardRecord(Convert.ToUInt64(parts[0]), Convert.ToInt32(parts[1]));
 		}
 		
 		/// <summary>
@@ -20,20 +19,30 @@ namespace BbegAutomator
 		/// <param name="year"></param>
 		/// <param name="month"></param>
 		/// <returns>Leaderboard with data from the specified year and month (or null if file doesn't exist)</returns>
-		public static BbegLeaderboard LoadLeaderboard(int year, int month)
+		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(int year, int month)
 		{
 			string filePath = DateToFilePath(year, month);
-			if (!File.Exists(filePath)) return null; 
+			if (!File.Exists(filePath)) return null;
+
+			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard()};
+			string[] lines = await File.ReadAllLinesAsync(filePath);
 			
-			var leaderboard = new BbegLeaderboard();
-			string[] lines = File.ReadAllLines(filePath);
+			bool firstLine = true;
 			foreach(string line in lines)
 			{
-				var record = ParseLine(line);
-				leaderboard.UpdateUser(record.Id, record.Points);
+				if (firstLine)
+				{
+					fileData.MessageId = ulong.Parse(line);
+					firstLine = false;
+				}
+				else
+				{
+					var record = ParseLine(line);
+					fileData.Leaderboard.UpdateUser(record.Id, record.Points);
+				}
 			}
 
-			return leaderboard;
+			return fileData;
 		}
 
 		/// <summary>
@@ -43,18 +52,19 @@ namespace BbegAutomator
 		/// <param name="month"></param>
 		/// <param name="leaderboard"></param>
 		/// <param name="messageId"></param>
-		public static async Task WriteLeaderboard(int year, int month, BbegLeaderboard leaderboard, ulong messageId)
+		public static async Task WriteLeaderboardAsync(int year, int month, Leaderboard leaderboard, ulong messageId)
 		{
 			string filePath = DateToFilePath(year, month);
 			var builder = new StringBuilder(1024);
 			builder.AppendLine(messageId.ToString());
-			foreach(var record in leaderboard.Leaderboard)
+			foreach(var record in leaderboard.Records)
 			{
 				builder.AppendLine($"{record.Id} {record.Points}");
 			}
+			Directory.CreateDirectory("data");
 			await File.WriteAllTextAsync(filePath, builder.ToString());
 		}
 
-		private static string DateToFilePath(int year, int month) => $"data/{year}-{(month < 10 ? "0" + month : month)}";
+		private static string DateToFilePath(int year, int month) => $"data/{year}-{(month < 10 ? "0" + month : month)}.txt";
 	}
 }
