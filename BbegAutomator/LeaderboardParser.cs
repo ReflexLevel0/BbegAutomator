@@ -13,19 +13,20 @@ namespace BbegAutomator
 			string[] parts = line.Split(" ");
 			return new LeaderboardRecord(Convert.ToUInt64(parts[0]), Convert.ToInt32(parts[1]));
 		}
-		
+
 		/// <summary>
 		/// Parses the leaderboard file from the specified year and month 
 		/// </summary>
 		/// <param name="year"></param>
 		/// <param name="month"></param>
+		/// <param name="serviceProvider"></param>
 		/// <returns>Leaderboard with data from the specified year and month (or null if file doesn't exist)</returns>
-		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(int year, int month)
+		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(int year, int month, IServiceProvider serviceProvider)
 		{
 			string filePath = DateToFilePath(year, month);
 			if (!File.Exists(filePath)) return null;
 
-			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard()};
+			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard(serviceProvider)};
 			string[] lines = await File.ReadAllLinesAsync(filePath);
 			
 			bool firstLine = true;

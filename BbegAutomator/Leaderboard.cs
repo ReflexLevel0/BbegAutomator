@@ -11,9 +11,15 @@ namespace BbegAutomator
 {
 	public class Leaderboard
 	{
+		private readonly IServiceProvider _serviceProvider;
 		private readonly List<LeaderboardRecord> _records = new List<LeaderboardRecord>();
 		public IReadOnlyList<LeaderboardRecord> Records => _records;
 
+		public Leaderboard(IServiceProvider servicesProvider)
+		{
+			_serviceProvider = servicesProvider;
+		}
+		
 		/// <summary>
 		/// Adds <exception cref="pointsToAdd"> number of points to the user with the specified id</exception>
 		/// </summary>
@@ -42,8 +48,11 @@ namespace BbegAutomator
 			return builder.ToString();
 		}
 
-		public async Task<string> ToStringWithUsernames(DiscordSocketClient client)
+		public async Task<string> ToStringWithUsernames()
 		{
+			var client = (IDiscordClient)_serviceProvider.GetService(typeof(IDiscordClient));
+			if (client == null) throw new DependencyInjectionNullException();
+			
 			var builder = new StringBuilder(1024);
 			foreach (var r in _records)
 			{
@@ -57,16 +66,23 @@ namespace BbegAutomator
 		/// <summary>
 		/// Reads all messages in the bump channel and updates the leaderboards 
 		/// </summary>
-		/// <param name="client"></param>
+		/// <param name="serviceProvider"></param>
 		/// <param name="skipLastMessage">Skips the last bump command in the channel if true</param>
 		/// <exception cref="Exception"></exception>
-		public static async Task UpdateLeaderboardsAsync(DiscordSocketClient client, bool skipLastMessage = true)
+		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = true)
 		{
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
-			var config = await Config.GetConfigAsync();
 
+			var config = (Config) serviceProvider.GetService(typeof(Config));
+			var client = (IDiscordClient) serviceProvider.GetService(typeof(IDiscordClient));
+			if (client == null || config == null) throw new DependencyInjectionNullException();
+
+			var channel = await client.GetChannelAsync(config.BbegChannelId);
+			if (channel is not SocketTextChannel bbegChannel) 
+				throw new Exception("Bbeg channel is null!");
+			
 			//Going through each message, updating the leaderboard each time and deleting the message (except the last one)
-			var messages = await ChannelUtils.GetMessages(client, config.BumpChannelId);
+			var messages = await ChannelUtils.GetMessages(serviceProvider, config.BumpChannelId);
 			if (skipLastMessage) messages = messages.Skip(1).ToList();
 			foreach (var channelMessage in messages)
 			{
@@ -78,14 +94,10 @@ namespace BbegAutomator
 					//Loading and updating the leaderboard data
 					ulong userId = channelMessage.Interaction.User.Id;
 					var messageCreationDate = channelMessage.CreatedAt.UtcDateTime;
-					var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(messageCreationDate.Year, messageCreationDate.Month) ?? 
-					                      new LeaderboardFileData { Leaderboard = new Leaderboard()};
+					var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(messageCreationDate.Year, messageCreationDate.Month, serviceProvider) ?? 
+					                      new LeaderboardFileData { Leaderboard = new Leaderboard(serviceProvider)};
 					leaderboardFile.Leaderboard.UpdateUser(userId, 1);
 
-					var channel = await client.GetChannelAsync(config.BbegChannelId);
-					if (channel is not SocketTextChannel bbegChannel) 
-						throw new Exception("Bbeg channel is null!");
-					
 					//Creating a new leaderboard message if a message doesn't exist
 					ulong messageId;
 					if (leaderboardFile.MessageId == null)
@@ -99,7 +111,7 @@ namespace BbegAutomator
 					{
 						var message = await bbegChannel.GetMessageAsync((ulong) leaderboardFile.MessageId) as RestUserMessage;
 						if (message == null) throw new Exception("Error converting discord message to SocketUserMessage type");
-						string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames(client);
+						string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames();
 						await message.ModifyAsync(m => m.Content = newContent);
 						messageId = (ulong) leaderboardFile.MessageId;
 					}
@@ -112,6 +124,8 @@ namespace BbegAutomator
 				await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Deleting message with id {channelMessage.Id}"));
 				await channelMessage.DeleteAsync();
 			}
+			
+			await Program.Log(new LogMessage(LogSeverity.Info, null, "Leaderboard updated"));
 		}
 	}
 }
