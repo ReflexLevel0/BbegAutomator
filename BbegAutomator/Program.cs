@@ -21,8 +21,7 @@ namespace BbegAutomator
 			//TODO: its unoptimized to do it this way, there isn't a reason to listen for every message, another event like SlashCommandExecuted should be used
 			_client.MessageReceived += OnMessageReceived;
 			//_client.SlashCommandExecuted += SlashCommandHandler;
-
-
+			
 			await _client.LoginAsync(TokenType.Bot, (await Config.GetConfigAsync()).BotToken);
 			await _client.StartAsync();
 
