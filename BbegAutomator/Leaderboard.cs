@@ -63,7 +63,7 @@ namespace BbegAutomator
 		public static async Task UpdateLeaderboardsAsync(DiscordSocketClient client, bool skipLastMessage = true)
 		{
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
-			var config = await Config.GetConfig();
+			var config = await Config.GetConfigAsync();
 
 			//Going through each message, updating the leaderboard each time and deleting the message (except the last one)
 			var messages = await ChannelUtils.GetMessages(client, config.BumpChannelId);

@@ -8,7 +8,7 @@ namespace BbegAutomator
 	public class Program
 	{
 		//TODO: store this data in the config file
-		private DiscordSocketClient _client;
+		private static DiscordSocketClient _client;
 
 		//TODO: crash the program if an exception occurs 
 		private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
@@ -23,22 +23,27 @@ namespace BbegAutomator
 			//_client.SlashCommandExecuted += SlashCommandHandler;
 
 
-			await _client.LoginAsync(TokenType.Bot, (await Config.GetConfig()).BotToken);
+			await _client.LoginAsync(TokenType.Bot, (await Config.GetConfigAsync()).BotToken);
 			await _client.StartAsync();
 
 			// Block this task until the program is closed.
 			await Task.Delay(-1);
 		}
 
-		public static Task Log(LogMessage msg)
+		public static async Task Log(LogMessage msg)
 		{
+			var config = await Config.GetConfigAsync();
+			foreach (ulong id in config.LoggingIds)
+			{
+				var user = await _client.GetUserAsync(id);
+				await user.SendMessageAsync(msg.Message);
+			}
 			Console.WriteLine(msg.ToString());
-			return Task.CompletedTask;
 		}
 
 		private async Task OnMessageReceived(SocketMessage message)
 		{
-			var config = await Config.GetConfig();
+			var config = await Config.GetConfigAsync();
 			
 			//Checking if the user has used the bump command
 			if (message.Interaction == null) return;
