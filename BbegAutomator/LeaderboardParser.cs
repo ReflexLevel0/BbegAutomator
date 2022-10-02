@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using BbegAutomator.Exceptions;
 using Discord;
 
 namespace BbegAutomator
@@ -17,13 +18,13 @@ namespace BbegAutomator
 		/// <summary>
 		/// Parses the leaderboard file from the specified year and month 
 		/// </summary>
-		/// <param name="year"></param>
-		/// <param name="month"></param>
+		/// <param name="eventName"></param>
 		/// <param name="serviceProvider"></param>
 		/// <returns>Leaderboard with data from the specified year and month (or null if file doesn't exist)</returns>
-		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(int year, int month, IServiceProvider serviceProvider)
+		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(string eventName, IServiceProvider serviceProvider)
 		{
-			string filePath = DateToFilePath(year, month);
+			if (string.IsNullOrWhiteSpace(eventName)) throw new EventNameNullException();
+			string filePath = DateToFilePath(eventName);
 			if (!File.Exists(filePath)) return null;
 
 			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard(serviceProvider)};
@@ -50,21 +51,23 @@ namespace BbegAutomator
 		/// <summary>
 		/// Creates a new leaderboard file and writes <exception cref="leaderboard"> data to it</exception>
 		/// </summary>
-		/// <param name="year"></param>
-		/// <param name="month"></param>
+		/// <param name="eventName"></param>
 		/// <param name="leaderboard"></param>
 		/// <param name="messageId"></param>
-		public static async Task WriteLeaderboardAsync(int year, int month, Leaderboard leaderboard, ulong messageId)
+		public static async Task WriteLeaderboardAsync(string eventName, Leaderboard leaderboard, ulong messageId)
 		{
-			string filePath = DateToFilePath(year, month);
+			if (string.IsNullOrWhiteSpace(eventName)) throw new EventNameNullException();
+			string filePath = DateToFilePath(eventName);
 			await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Writing data to {filePath}"));
+			
 			var builder = new StringBuilder(1024);
 			builder.AppendLine(messageId.ToString());
 			builder.Append(leaderboard);
+			
 			Directory.CreateDirectory("data");
 			await File.WriteAllTextAsync(filePath, builder.ToString());
 		}
 
-		private static string DateToFilePath(int year, int month) => $"data/{year}-{(month < 10 ? "0" + month : month)}.txt";
+		private static string DateToFilePath(string eventName) => $"data/{eventName}.txt";
 	}
 }

@@ -13,8 +13,9 @@ namespace BbegAutomator
 		public readonly string BumpCommandString;
 		public readonly string BotToken;
 		public readonly List<ulong> LoggingIds;
+		public readonly string CurrentEvent;
 
-		public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken, List<ulong> loggingIds)
+		public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken, List<ulong> loggingIds, string currentEvent)
 		{
 			BumpChannelId = bumpChannelId;
 			BbegChannelId = bbegChannelId;
@@ -22,6 +23,7 @@ namespace BbegAutomator
 			BumpCommandString = bumpCommandString;
 			BotToken = botToken;
 			LoggingIds = loggingIds;
+			CurrentEvent = currentEvent;
 		}
 
 		public static async Task<Config> GetConfigAsync()

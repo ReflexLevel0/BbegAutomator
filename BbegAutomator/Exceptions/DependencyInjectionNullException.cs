@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BbegAutomator
+namespace BbegAutomator.Exceptions
 {
 	public class DependencyInjectionNullException : Exception
 	{

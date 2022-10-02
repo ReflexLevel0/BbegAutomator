@@ -13,7 +13,7 @@ namespace BbegAutomator
 		private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
 		private IHost _host;
-		private static readonly DiscordSocketClient Client = new DiscordSocketClient();
+		private static readonly DiscordSocketClient Client = new();
 		private static Config _config;
 		
 		private async Task MainAsync()

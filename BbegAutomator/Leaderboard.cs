@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BbegAutomator.Exceptions;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
@@ -93,8 +94,7 @@ namespace BbegAutomator
 				{
 					//Loading and updating the leaderboard data
 					ulong userId = channelMessage.Interaction.User.Id;
-					var messageCreationDate = channelMessage.CreatedAt.UtcDateTime;
-					var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(messageCreationDate.Year, messageCreationDate.Month, serviceProvider) ?? 
+					var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(config.CurrentEvent, serviceProvider) ?? 
 					                      new LeaderboardFileData { Leaderboard = new Leaderboard(serviceProvider)};
 					leaderboardFile.Leaderboard.UpdateUser(userId, 1);
 
@@ -102,7 +102,7 @@ namespace BbegAutomator
 					ulong messageId;
 					if (leaderboardFile.MessageId == null)
 					{
-						var message = await bbegChannel.SendMessageAsync(leaderboardFile.Leaderboard.ToString());
+						var message = await bbegChannel.SendMessageAsync(await leaderboardFile.Leaderboard.ToStringWithUsernames());
 						messageId = message.Id;
 					}
 					
@@ -117,7 +117,7 @@ namespace BbegAutomator
 					}
 
 					//Writing changes to the file
-					await LeaderboardParser.WriteLeaderboardAsync(messageCreationDate.Year, messageCreationDate.Month, leaderboardFile.Leaderboard, messageId);
+					await LeaderboardParser.WriteLeaderboardAsync(config.CurrentEvent, leaderboardFile.Leaderboard, messageId);
 				}
 
 				//Deleting the message
