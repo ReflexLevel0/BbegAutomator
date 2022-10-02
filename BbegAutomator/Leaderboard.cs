@@ -82,7 +82,10 @@ namespace BbegAutomator
 			if (channel is not SocketTextChannel bbegChannel) 
 				throw new Exception("Bbeg channel is null!");
 			
-			//Going through each message, updating the leaderboard each time and deleting the message (except the last one)
+			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(config.CurrentEvent, serviceProvider) ?? 
+			                      new LeaderboardFileData { Leaderboard = new Leaderboard(serviceProvider)};
+			
+			//Going through each message
 			var messages = await ChannelUtils.GetMessages(serviceProvider, config.BumpChannelId);
 			if (skipLastMessage) messages = messages.Skip(1).ToList();
 			foreach (var channelMessage in messages)
@@ -92,38 +95,35 @@ namespace BbegAutomator
 				    channelMessage.Interaction != null && 
 				    string.CompareOrdinal(channelMessage.Interaction.Name, config.BumpCommandString) == 0)
 				{
-					//Loading and updating the leaderboard data
 					ulong userId = channelMessage.Interaction.User.Id;
-					var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(config.CurrentEvent, serviceProvider) ?? 
-					                      new LeaderboardFileData { Leaderboard = new Leaderboard(serviceProvider)};
 					leaderboardFile.Leaderboard.UpdateUser(userId, 1);
-
-					//Creating a new leaderboard message if a message doesn't exist
-					ulong messageId;
-					if (leaderboardFile.MessageId == null)
-					{
-						var message = await bbegChannel.SendMessageAsync(await leaderboardFile.Leaderboard.ToStringWithUsernames());
-						messageId = message.Id;
-					}
-					
-					//Updating the leaderboard message if the message exists
-					else
-					{
-						var message = await bbegChannel.GetMessageAsync((ulong) leaderboardFile.MessageId) as RestUserMessage;
-						if (message == null) throw new Exception("Error converting discord message to SocketUserMessage type");
-						string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames();
-						await message.ModifyAsync(m => m.Content = newContent);
-						messageId = (ulong) leaderboardFile.MessageId;
-					}
-
-					//Writing changes to the file
-					await LeaderboardParser.WriteLeaderboardAsync(config.CurrentEvent, leaderboardFile.Leaderboard, messageId);
 				}
 
 				//Deleting the message
 				await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Deleting message with id {channelMessage.Id}"));
 				await channelMessage.DeleteAsync();
 			}
+			
+			//Creating a new leaderboard message if a message doesn't exist
+			ulong messageId;
+			if (leaderboardFile.MessageId == null)
+			{
+				var message = await bbegChannel.SendMessageAsync(await leaderboardFile.Leaderboard.ToStringWithUsernames());
+				messageId = message.Id;
+			}
+					
+			//Updating the leaderboard message if the message exists
+			else
+			{
+				var message = await bbegChannel.GetMessageAsync((ulong) leaderboardFile.MessageId) as RestUserMessage;
+				if (message == null) throw new Exception("Error converting discord message to SocketUserMessage type");
+				string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+				await message.ModifyAsync(m => m.Content = newContent);
+				messageId = (ulong) leaderboardFile.MessageId;
+			}
+				
+			//Writing changes to the file
+			await LeaderboardParser.WriteLeaderboardAsync(config.CurrentEvent, leaderboardFile.Leaderboard, messageId);
 			
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Leaderboard updated"));
 		}
