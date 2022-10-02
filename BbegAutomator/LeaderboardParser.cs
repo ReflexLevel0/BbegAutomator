@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 
 namespace BbegAutomator
 {
@@ -55,12 +56,10 @@ namespace BbegAutomator
 		public static async Task WriteLeaderboardAsync(int year, int month, Leaderboard leaderboard, ulong messageId)
 		{
 			string filePath = DateToFilePath(year, month);
+			await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Writing data to {filePath}"));
 			var builder = new StringBuilder(1024);
 			builder.AppendLine(messageId.ToString());
-			foreach(var record in leaderboard.Records)
-			{
-				builder.AppendLine($"{record.Id} {record.Points}");
-			}
+			builder.Append(leaderboard);
 			Directory.CreateDirectory("data");
 			await File.WriteAllTextAsync(filePath, builder.ToString());
 		}

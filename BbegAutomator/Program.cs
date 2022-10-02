@@ -30,7 +30,7 @@ namespace BbegAutomator
 			await Task.Delay(-1);
 		}
 
-		private static Task Log(LogMessage msg)
+		public static Task Log(LogMessage msg)
 		{
 			Console.WriteLine(msg.ToString());
 			return Task.CompletedTask;
@@ -43,7 +43,7 @@ namespace BbegAutomator
 			//Checking if the user has used the bump command
 			if (message.Interaction == null) return;
 			if (message.Channel.Id != config.BumpChannelId) return;
-			await Console.Out.WriteLineAsync($"{message.Interaction.User.Username} used a command in the bump channel!!");
+			await Log(new LogMessage(LogSeverity.Info, null, $"{message.Interaction.User.Username} used a command in the bump channel!!"));
 			
 			await Leaderboard.UpdateLeaderboardsAsync(_client);
 		}

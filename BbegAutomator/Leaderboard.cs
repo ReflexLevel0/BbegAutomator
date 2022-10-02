@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 
@@ -61,6 +62,7 @@ namespace BbegAutomator
 		/// <exception cref="Exception"></exception>
 		public static async Task UpdateLeaderboardsAsync(DiscordSocketClient client, bool skipLastMessage = true)
 		{
+			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
 			var config = await Config.GetConfig();
 
 			//Going through each message, updating the leaderboard each time and deleting the message (except the last one)
@@ -83,8 +85,7 @@ namespace BbegAutomator
 					var channel = await client.GetChannelAsync(config.BbegChannelId);
 					if (channel is not SocketTextChannel bbegChannel) 
 						throw new Exception("Bbeg channel is null!");
-
-					//TODO: finish this
+					
 					//Creating a new leaderboard message if a message doesn't exist
 					ulong messageId;
 					if (leaderboardFile.MessageId == null)
@@ -108,10 +109,8 @@ namespace BbegAutomator
 				}
 
 				//Deleting the message
-				Console.WriteLine($"Deleting message with id {channelMessage.Id}");
+				await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Deleting message with id {channelMessage.Id}"));
 				await channelMessage.DeleteAsync();
-				Console.WriteLine($"Deleted message with id {channelMessage.Id}");
-				await Task.Delay(1000);
 			}
 		}
 	}
