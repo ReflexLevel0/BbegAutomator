@@ -71,7 +71,7 @@ namespace BbegAutomator
 		/// <param name="serviceProvider"></param>
 		/// <param name="skipLastMessage">Skips the last bump command in the channel if true</param>
 		/// <exception cref="Exception"></exception>
-		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = false)
+		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = true)
 		{
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
 
@@ -106,11 +106,15 @@ namespace BbegAutomator
 			}
 			
 			//Creating a new leaderboard message if a message doesn't exist
-			ulong messageId;
-			if (leaderboardFile.MessageId == null)
+			ulong messageId = 0;
+			if (leaderboardFile.MessageId is null or 0)
 			{
-				var message = await bbegChannel.SendMessageAsync(await leaderboardFile.Leaderboard.ToStringWithUsernames());
-				messageId = message.Id;
+				string leaderboardMessage = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+				if (string.IsNullOrWhiteSpace(leaderboardMessage) == false)
+				{
+					var message = await bbegChannel.SendMessageAsync(leaderboardMessage);
+					messageId = message.Id;
+				}
 			}
 					
 			//Updating the leaderboard message if the message exists

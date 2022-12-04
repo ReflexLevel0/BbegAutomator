@@ -13,8 +13,9 @@ namespace BbegAutomator
 		public readonly string BumpCommandString;
 		public readonly string BotToken;
 		public readonly List<ulong> LoggingIds;
-		public readonly string CurrentEvent;
+		public string CurrentEvent;
 		public readonly ulong GuildId;
+		private const string APPSETTINGS_PATH = "appsettings.json";
 
 		public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken, List<ulong> loggingIds, string currentEvent, ulong guildId)
 		{
@@ -30,7 +31,13 @@ namespace BbegAutomator
 
 		public static async Task<Config> GetConfigAsync()
 		{
-			return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync("appsettings.json"));
+			return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync(APPSETTINGS_PATH));
 		}
+		
+		public async Task WriteConfigAsync()
+		{
+			string tmp = JsonConvert.SerializeObject(this);
+			await File.WriteAllTextAsync(APPSETTINGS_PATH, tmp);
+		} 
 	}
 }

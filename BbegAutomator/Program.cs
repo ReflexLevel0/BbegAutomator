@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Net;
@@ -18,6 +19,7 @@ namespace BbegAutomator
 		private static readonly DiscordSocketClient Client = new();
 		private static Config _config;
 		private const string UpdateCommandName = "update";
+		private const string CreateEventCommandName = "create-event";
 
 		private async Task MainAsync()
 		{
@@ -58,16 +60,6 @@ namespace BbegAutomator
 			Console.WriteLine(msg.ToString());
 		}
 
-		private async Task OnMessageReceived(SocketMessage message)
-		{
-			//Checking if the user has used the bump command
-			if (message.Interaction == null) return;
-			if (message.Channel.Id != _config.BumpChannelId) return;
-			await Log(new LogMessage(LogSeverity.Info, null, $"{message.Interaction.User.Username} used a command in the bump channel!!"));
-
-			await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
-		}
-
 		private async Task InitCommandsAsync()
 		{
 			{
@@ -76,9 +68,14 @@ namespace BbegAutomator
 				var updateCommand = new SlashCommandBuilder();
 				updateCommand.WithName(UpdateCommandName);
 				updateCommand.WithDescription("Updates the bbeg leaderboard for the current event");
+				var createEventCommand = new SlashCommandBuilder();
+				createEventCommand.WithName(CreateEventCommandName);
+				createEventCommand.WithDescription("Creates a new event (all updates will update the leaderboard for this event)");
+				createEventCommand.AddOption("name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
 				try
 				{
 					await guild.CreateApplicationCommandAsync(updateCommand.Build());
+					await guild.CreateApplicationCommandAsync(createEventCommand.Build());
 				}
 				catch (ApplicationCommandException exception)
 				{
@@ -89,14 +86,22 @@ namespace BbegAutomator
 
 		private async Task SlashCommandHandlerAsync(SocketCommandBase command)
 		{
-			if (string.CompareOrdinal(command.CommandName, UpdateCommandName) == 0)
+			switch (command.CommandName)
 			{
-				await command.RespondAsync("Leaderboard updating!");
-				await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
-			}
-			else
-			{
-				throw new Exception("Command not handled!");
+				case UpdateCommandName:
+					await command.RespondAsync("Leaderboard updating!");
+					await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
+					await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
+					break;
+				case CreateEventCommandName:
+					string eventName = ((SocketSlashCommand)command).Data.Options.First().Value.ToString();
+					await command.RespondAsync($"Creating event \"{eventName}\"");
+					await EventHandler.CreateEvent(eventName);
+					await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
+					_config = await Config.GetConfigAsync();
+					break;
+				default:
+					throw new Exception("Command not handled!");
 			}
 		}
 	}
