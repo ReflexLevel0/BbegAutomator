@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BbegAutomator.Exceptions;
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
@@ -112,9 +113,16 @@ namespace BbegAutomator
 				case CreateEventCommandName:
 					eventName = firstParameter;
 					await command.RespondAsync($"Creating event \"{eventName}\"");
-					await EventHandler.CreateEvent(eventName);
-					await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
-					_config = await Config.GetConfigAsync();
+					try
+					{
+						await EventHandler.CreateEvent(eventName);
+						await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
+						_config.CurrentEvent = eventName;
+					}
+					catch (EventAlreadyExistsException)
+					{
+						await command.ModifyOriginalResponseAsync(a => a.Content = $"Event \"{eventName}\" already exists!");
+					}
 					break;
 				case ListLeaderboardCommandName:
 					eventName = firstParameter;

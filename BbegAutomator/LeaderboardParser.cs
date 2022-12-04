@@ -24,10 +24,9 @@ namespace BbegAutomator
 		public static async Task<IEnumerable<LeaderboardFileData>> LoadAllLeaderboardsAsync(IServiceProvider serviceProvider)
 		{
 			var data = new List<LeaderboardFileData>();
-			foreach(var file in new DirectoryInfo("data").GetFiles())
+			foreach(string eventName in EventHandler.GetEventNames())
 			{
-				string fileName = file.Name[..^file.Extension.Length];
-				data.Add(await LoadLeaderboardAsync(fileName, serviceProvider));
+				data.Add(await LoadLeaderboardAsync(eventName, serviceProvider));
 			}
 			return data;
 		}
