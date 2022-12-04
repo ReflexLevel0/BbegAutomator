@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
 using Discord;
-using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
 
@@ -15,11 +14,13 @@ namespace BbegAutomator
 	{
 		private readonly IServiceProvider _serviceProvider;
 		private readonly List<LeaderboardRecord> _records = new List<LeaderboardRecord>();
-		public IReadOnlyList<LeaderboardRecord> Records => _records;
+		private IEnumerable<LeaderboardRecord> Records => _records;
+		private readonly string _name;
 
-		public Leaderboard(IServiceProvider servicesProvider)
+		public Leaderboard(string name, IServiceProvider servicesProvider)
 		{
 			_serviceProvider = servicesProvider;
+			_name = name;
 		}
 		
 		/// <summary>
@@ -50,12 +51,13 @@ namespace BbegAutomator
 			return builder.ToString();
 		}
 
-		public async Task<string> ToStringWithUsernames()
+		public async Task<string> ToStringWithUsernamesAsync()
 		{
 			var client = (IDiscordClient)_serviceProvider.GetService(typeof(IDiscordClient));
 			if (client == null) throw new DependencyInjectionNullException();
 			
 			var builder = new StringBuilder(1024);
+			builder.AppendLine($"Leaderboard for event \"{_name}\":");
 			foreach (var r in _records)
 			{
 				var user = await client.GetUserAsync(r.Id);
@@ -84,7 +86,7 @@ namespace BbegAutomator
 				throw new Exception("Bbeg channel is null!");
 			
 			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(config.CurrentEvent, serviceProvider) ?? 
-			                      new LeaderboardFileData { Leaderboard = new Leaderboard(serviceProvider)};
+			                      new LeaderboardFileData { Leaderboard = new Leaderboard(config.CurrentEvent, serviceProvider)};
 			
 			//Going through each message
 			var messages = await ChannelUtils.GetMessages(serviceProvider, config.BumpChannelId);
@@ -109,7 +111,7 @@ namespace BbegAutomator
 			ulong messageId = 0;
 			if (leaderboardFile.MessageId is null or 0)
 			{
-				string leaderboardMessage = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+				string leaderboardMessage = await leaderboardFile.Leaderboard.ToStringWithUsernamesAsync();
 				if (string.IsNullOrWhiteSpace(leaderboardMessage) == false)
 				{
 					var message = await bbegChannel.SendMessageAsync(leaderboardMessage);
@@ -122,7 +124,7 @@ namespace BbegAutomator
 			{
 				var message = await bbegChannel.GetMessageAsync((ulong) leaderboardFile.MessageId) as RestUserMessage;
 				if (message == null) throw new Exception("Error converting discord message to SocketUserMessage type");
-				string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+				string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernamesAsync();
 				await message.ModifyAsync(m => m.Content = newContent);
 				messageId = (ulong) leaderboardFile.MessageId;
 			}

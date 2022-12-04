@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,22 @@ namespace BbegAutomator
 			string[] parts = line.Split(" ");
 			return new LeaderboardRecord(Convert.ToUInt64(parts[0]), Convert.ToInt32(parts[1]));
 		}
+		
+		/// <summary>
+		/// Returns all leaderboards
+		/// </summary>
+		/// <param name="serviceProvider"></param>
+		/// <returns></returns>
+		public static async Task<IEnumerable<LeaderboardFileData>> LoadAllLeaderboardsAsync(IServiceProvider serviceProvider)
+		{
+			var data = new List<LeaderboardFileData>();
+			foreach(var file in new DirectoryInfo("data").GetFiles())
+			{
+				string fileName = file.Name[..^file.Extension.Length];
+				data.Add(await LoadLeaderboardAsync(fileName, serviceProvider));
+			}
+			return data;
+		}
 
 		/// <summary>
 		/// Parses the leaderboard file from the specified year and month 
@@ -27,7 +44,7 @@ namespace BbegAutomator
 			string filePath = DateToFilePath(eventName);
 			if (!File.Exists(filePath)) return null;
 
-			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard(serviceProvider)};
+			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard(eventName, serviceProvider)};
 			string[] lines = await File.ReadAllLinesAsync(filePath);
 			
 			bool firstLine = true;

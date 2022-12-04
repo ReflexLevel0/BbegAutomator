@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Net;
@@ -74,15 +76,19 @@ namespace BbegAutomator
 				createEventCommand.WithName(CreateEventCommandName);
 				createEventCommand.WithDescription("Creates a new event (all updates will update the leaderboard for this event)");
 				createEventCommand.AddOption("name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
-				var listLeaderboardEventCommand = new SlashCommandBuilder();
-				listLeaderboardEventCommand.WithName(ListLeaderboardCommandName);
-				listLeaderboardEventCommand.WithDescription("Prints out a leaderboard for the specified event");
-				listLeaderboardEventCommand.AddOption("event-name", ApplicationCommandOptionType.String, "Name of the event to be printer out", isRequired: true);
+				var listLeaderboardCommand = new SlashCommandBuilder();
+				listLeaderboardCommand.WithName(ListLeaderboardCommandName);
+				listLeaderboardCommand.WithDescription("Prints out a leaderboard for the specified event");
+				listLeaderboardCommand.AddOption("event-name", ApplicationCommandOptionType.String, "Name of the event to be printer out", isRequired: true);
+				var listAllLeaderboardsCommand = new SlashCommandBuilder();
+				listAllLeaderboardsCommand.WithName(ListAllLeaderboardsCommandName);
+				listAllLeaderboardsCommand.WithDescription("Prints out all leaderboards");
 				try
 				{
 					await guild.CreateApplicationCommandAsync(updateCommand.Build());
 					await guild.CreateApplicationCommandAsync(createEventCommand.Build());
-					await guild.CreateApplicationCommandAsync(listLeaderboardEventCommand.Build());
+					await guild.CreateApplicationCommandAsync(listLeaderboardCommand.Build());
+					await guild.CreateApplicationCommandAsync(listAllLeaderboardsCommand.Build());
 				}
 				catch (ApplicationCommandException exception)
 				{
@@ -112,9 +118,18 @@ namespace BbegAutomator
 					break;
 				case ListLeaderboardCommandName:
 					eventName = firstParameter;
-					var leaderboard = await LeaderboardParser.LoadLeaderboardAsync(eventName, _host.Services);
-					string message = await leaderboard.Leaderboard.ToStringWithUsernames();
+					var leaderboardData = await LeaderboardParser.LoadLeaderboardAsync(eventName, _host.Services);
+					string message = await leaderboardData.Leaderboard.ToStringWithUsernamesAsync();
 					await command.RespondAsync(message);
+					break;
+				case ListAllLeaderboardsCommandName:
+					var leaderboards = await LeaderboardParser.LoadAllLeaderboardsAsync(_host.Services);
+					var builder = new StringBuilder(2048);
+					foreach (var leaderboard in leaderboards)
+					{
+						builder.AppendLine(await leaderboard.Leaderboard.ToStringWithUsernamesAsync());
+					}
+					await command.RespondAsync(builder.ToString());
 					break;
 				default:
 					throw new Exception("Command not handled!");
