@@ -9,13 +9,14 @@ namespace BbegAutomator;
 
 public static class EventHandler
 {
-	public static async Task CreateEvent(string eventName)
+	public static async Task CreateEvent(string eventName, IServiceProvider serviceProvider)
 	{
 		if (GetEventNames().Any(name => string.Compare(name, eventName, StringComparison.Ordinal) == 0))
 		{
 			throw new EventAlreadyExistsException(eventName);
 		}
-		var config = await Config.GetConfigAsync();
+		var config = (Config)serviceProvider.GetService(typeof(Config));
+		if (config is null) throw new Exception("DI exception");
 		config.CurrentEvent = eventName;
 		await config.WriteConfigAsync();
 	}

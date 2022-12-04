@@ -115,7 +115,7 @@ namespace BbegAutomator
 					await command.RespondAsync($"Creating event \"{eventName}\"");
 					try
 					{
-						await EventHandler.CreateEvent(eventName);
+						await EventHandler.CreateEvent(eventName, _host.Services);
 						await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
 						_config.CurrentEvent = eventName;
 					}
@@ -127,8 +127,15 @@ namespace BbegAutomator
 				case ListLeaderboardCommandName:
 					eventName = firstParameter;
 					var leaderboardData = await LeaderboardParser.LoadLeaderboardAsync(eventName, _host.Services);
-					string message = await leaderboardData.Leaderboard.ToStringWithUsernamesAsync();
-					await command.RespondAsync(message);
+					if (leaderboardData == null)
+					{
+						await command.RespondAsync("Leaderboard not found!");
+					}
+					else
+					{
+						string message = await leaderboardData.Leaderboard.ToStringWithUsernamesAsync();
+						await command.RespondAsync(message);
+					}
 					break;
 				case ListAllLeaderboardsCommandName:
 					var leaderboards = await LeaderboardParser.LoadAllLeaderboardsAsync(_host.Services);
