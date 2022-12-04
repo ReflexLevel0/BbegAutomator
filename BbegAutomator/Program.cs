@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 
 namespace BbegAutomator
 {
@@ -15,7 +17,8 @@ namespace BbegAutomator
 		private IHost _host;
 		private static readonly DiscordSocketClient Client = new();
 		private static Config _config;
-		
+		private const string UpdateCommandName = "update";
+
 		private async Task MainAsync()
 		{
 			_config = await Config.GetConfigAsync();
@@ -28,13 +31,12 @@ namespace BbegAutomator
 						.AddSingleton(Client)
 						.AddSingleton<IDiscordClient>(Client)
 						.AddSingleton(_config)).Build();
-			
-			Client.Log += Log;
 
-			//TODO: its unoptimized to do it this way, there isn't a reason to listen for every message, another event like SlashCommandExecuted should be used
-			Client.MessageReceived += OnMessageReceived;
-			//_client.SlashCommandExecuted += SlashCommandHandler;
+			Client.Log += Log;
 			
+			Client.SlashCommandExecuted += SlashCommandHandlerAsync;
+			Client.Ready += InitCommandsAsync;
+
 			await Client.LoginAsync(TokenType.Bot, _config.BotToken);
 			await Client.StartAsync();
 
@@ -52,6 +54,7 @@ namespace BbegAutomator
 					await user.SendMessageAsync(msg.Message);
 				}
 			}
+
 			Console.WriteLine(msg.ToString());
 		}
 
@@ -61,8 +64,40 @@ namespace BbegAutomator
 			if (message.Interaction == null) return;
 			if (message.Channel.Id != _config.BumpChannelId) return;
 			await Log(new LogMessage(LogSeverity.Info, null, $"{message.Interaction.User.Username} used a command in the bump channel!!"));
-			
+
 			await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
+		}
+
+		private async Task InitCommandsAsync()
+		{
+			{
+				//Setting up app commands
+				var guild = Client.GetGuild(_config.GuildId);
+				var updateCommand = new SlashCommandBuilder();
+				updateCommand.WithName(UpdateCommandName);
+				updateCommand.WithDescription("Updates the bbeg leaderboard for the current event");
+				try
+				{
+					await guild.CreateApplicationCommandAsync(updateCommand.Build());
+				}
+				catch (ApplicationCommandException exception)
+				{
+					Console.WriteLine(exception.Message);
+				}
+			}
+		}
+
+		private async Task SlashCommandHandlerAsync(SocketCommandBase command)
+		{
+			if (string.CompareOrdinal(command.CommandName, UpdateCommandName) == 0)
+			{
+				await command.RespondAsync("Leaderboard updating!");
+				await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
+			}
+			else
+			{
+				throw new Exception("Command not handled!");
+			}
 		}
 	}
 }

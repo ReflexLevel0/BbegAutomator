@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
 using Discord;
+using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
 
@@ -70,7 +71,7 @@ namespace BbegAutomator
 		/// <param name="serviceProvider"></param>
 		/// <param name="skipLastMessage">Skips the last bump command in the channel if true</param>
 		/// <exception cref="Exception"></exception>
-		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = true)
+		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = false)
 		{
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
 
