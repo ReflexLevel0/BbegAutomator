@@ -23,6 +23,7 @@ namespace BbegAutomator
 		private static Config _config;
 		private const string UpdateCommandName = "update";
 		private const string CreateEventCommandName = "event-create";
+		private const string RenameCommandName = "event-rename";
 		private const string ListLeaderboardCommandName = "leaderboard-list";
 		private const string ListAllLeaderboardsCommandName = "leaderboard-list-all";
 
@@ -77,6 +78,11 @@ namespace BbegAutomator
 				createEventCommand.WithName(CreateEventCommandName);
 				createEventCommand.WithDescription("Creates a new event (all updates will update the leaderboard for this event)");
 				createEventCommand.AddOption("name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
+				var renameEventCommand = new SlashCommandBuilder();
+				renameEventCommand.WithName(RenameCommandName);
+				renameEventCommand.WithDescription("Renames an event to a new name");
+				renameEventCommand.AddOption("old-event-name", ApplicationCommandOptionType.String, "Name of the event", isRequired: true);
+				renameEventCommand.AddOption("new-event-name", ApplicationCommandOptionType.String, "New name of the event", isRequired: true);
 				var listLeaderboardCommand = new SlashCommandBuilder();
 				listLeaderboardCommand.WithName(ListLeaderboardCommandName);
 				listLeaderboardCommand.WithDescription("Prints out a leaderboard for the specified event");
@@ -84,12 +90,13 @@ namespace BbegAutomator
 				var listAllLeaderboardsCommand = new SlashCommandBuilder();
 				listAllLeaderboardsCommand.WithName(ListAllLeaderboardsCommandName);
 				listAllLeaderboardsCommand.WithDescription("Prints out all leaderboards");
+				SlashCommandBuilder[] commands = { updateCommand, createEventCommand, listLeaderboardCommand, listAllLeaderboardsCommand, renameEventCommand };
 				try
 				{
-					await guild.CreateApplicationCommandAsync(updateCommand.Build());
-					await guild.CreateApplicationCommandAsync(createEventCommand.Build());
-					await guild.CreateApplicationCommandAsync(listLeaderboardCommand.Build());
-					await guild.CreateApplicationCommandAsync(listAllLeaderboardsCommand.Build());
+					foreach (var command in commands)
+					{
+						await guild.CreateApplicationCommandAsync(command.Build());
+					}
 				}
 				catch (ApplicationCommandException exception)
 				{
@@ -100,14 +107,18 @@ namespace BbegAutomator
 
 		private async Task SlashCommandHandlerAsync(SocketCommandBase command)
 		{
-			var firstOption = ((SocketSlashCommand)command).Data.Options.FirstOrDefault();
+			var options = ((SocketSlashCommand)command).Data.Options;
+			var firstOption = options.FirstOrDefault();
 			string firstParameter = firstOption?.Value.ToString();
+			var secondOptions = options.Skip(1).FirstOrDefault();
+			string secondParameter = secondOptions?.Value.ToString();
+
 			string eventName;
 			switch (command.CommandName)
 			{
 				case UpdateCommandName:
 					await command.RespondAsync("Leaderboard updating!");
-					await Leaderboard.UpdateLeaderboardsAsync(_host.Services);
+					await Leaderboard.UpdateLeaderboardAsync(_host.Services);
 					await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
 					break;
 				case CreateEventCommandName:
@@ -115,13 +126,26 @@ namespace BbegAutomator
 					await command.RespondAsync($"Creating event \"{eventName}\"");
 					try
 					{
-						await EventHandler.CreateEvent(eventName, _host.Services);
+						_config = await EventHandler.CreateEventAsync(eventName, _host.Services);
 						await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
-						_config.CurrentEvent = eventName;
 					}
 					catch (EventAlreadyExistsException)
 					{
 						await command.ModifyOriginalResponseAsync(a => a.Content = $"Event \"{eventName}\" already exists!");
+					}
+					break;
+				case RenameCommandName:
+					eventName = firstParameter;
+					string newEventName = secondParameter;
+					await command.RespondAsync($"Renaming event \"{eventName}\" to \"{newEventName}\"");
+					try
+					{
+						_config = await EventHandler.RenameEventAsync(eventName, newEventName, _host.Services);
+						await command.ModifyOriginalResponseAsync(a => a.Content = $"Renamed event \"{eventName}\" to \"{newEventName}\"");
+					}
+					catch(EventDoesntExistException e)
+					{
+						await command.ModifyOriginalResponseAsync(a => a.Content = e.Message);
 					}
 					break;
 				case ListLeaderboardCommandName:

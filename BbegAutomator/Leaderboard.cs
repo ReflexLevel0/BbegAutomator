@@ -68,25 +68,29 @@ namespace BbegAutomator
 		}
 
 		/// <summary>
-		/// Reads all messages in the bump channel and updates the leaderboards 
+		/// Reads all messages in the bump channel and updates the leaderboard for the current event
 		/// </summary>
 		/// <param name="serviceProvider"></param>
 		/// <param name="skipLastMessage">Skips the last bump command in the channel if true</param>
 		/// <exception cref="Exception"></exception>
-		public static async Task UpdateLeaderboardsAsync(IServiceProvider serviceProvider, bool skipLastMessage = true)
+		public static async Task UpdateLeaderboardAsync(IServiceProvider serviceProvider, bool skipLastMessage = true)
+		{
+			var config = (Config) serviceProvider.GetService(typeof(Config));
+			await UpdateLeaderboardAsync(config.CurrentEvent, serviceProvider, skipLastMessage);
+		}
+
+		public static async Task UpdateLeaderboardAsync(string eventName, IServiceProvider serviceProvider, bool skipLastMessage = true)
 		{
 			await Program.Log(new LogMessage(LogSeverity.Info, null, "Updating leaderboard"));
-
 			var config = (Config) serviceProvider.GetService(typeof(Config));
 			var client = (IDiscordClient) serviceProvider.GetService(typeof(IDiscordClient));
-			if (client == null || config == null) throw new DependencyInjectionNullException();
-
+			
 			var channel = await client.GetChannelAsync(config.BbegChannelId);
 			if (channel is not SocketTextChannel bbegChannel) 
 				throw new Exception("Bbeg channel is null!");
 			
-			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(config.CurrentEvent, serviceProvider) ?? 
-			                      new LeaderboardFileData { Leaderboard = new Leaderboard(config.CurrentEvent, serviceProvider)};
+			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(eventName, serviceProvider) ?? 
+			                      new LeaderboardFileData { Leaderboard = new Leaderboard(eventName, serviceProvider)};
 			
 			//Going through each message
 			var messages = await ChannelUtils.GetMessages(serviceProvider, config.BumpChannelId);
