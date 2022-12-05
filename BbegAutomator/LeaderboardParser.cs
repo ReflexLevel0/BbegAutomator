@@ -39,7 +39,7 @@ namespace BbegAutomator
 		/// <returns>Leaderboard with data from the specified year and month (or null if file doesn't exist)</returns>
 		public static async Task<LeaderboardFileData> LoadLeaderboardAsync(string eventName, IServiceProvider serviceProvider)
 		{
-			if (string.IsNullOrWhiteSpace(eventName)) throw new EventNameNullException();
+			if (string.IsNullOrWhiteSpace(eventName)) throw new EventDoesntExistException(eventName);
 			string filePath = FileUtils.EventNameToFilePath(eventName);
 			if (!File.Exists(filePath)) return null;
 
@@ -73,7 +73,7 @@ namespace BbegAutomator
 		/// <param name="messageId"></param>
 		public static async Task WriteLeaderboardAsync(string eventName, Leaderboard leaderboard, ulong messageId)
 		{
-			if (string.IsNullOrWhiteSpace(eventName)) throw new EventNameNullException();
+			if (string.IsNullOrWhiteSpace(eventName)) throw new EventDoesntExistException(eventName);
 			string filePath = FileUtils.EventNameToFilePath(eventName);
 			await Program.Log(new LogMessage(LogSeverity.Verbose, null, $"Writing data to {filePath}"));
 			
