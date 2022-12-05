@@ -23,7 +23,8 @@ namespace BbegAutomator
 		private static Config _config;
 		private const string UpdateCommandName = "update";
 		private const string CreateEventCommandName = "event-create";
-		private const string RenameCommandName = "event-rename";
+		private const string RenameEventCommandName = "event-rename";
+		private const string DeleteEventCommandName = "event-delete";
 		private const string ListLeaderboardCommandName = "leaderboard-list";
 		private const string ListAllLeaderboardsCommandName = "leaderboard-list-all";
 
@@ -41,7 +42,7 @@ namespace BbegAutomator
 						.AddSingleton(_config)).Build();
 
 			Client.Log += Log;
-			
+
 			Client.SlashCommandExecuted += SlashCommandHandlerAsync;
 			Client.Ready += InitCommandsAsync;
 
@@ -79,10 +80,14 @@ namespace BbegAutomator
 				createEventCommand.WithDescription("Creates a new event (all updates will update the leaderboard for this event)");
 				createEventCommand.AddOption("name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
 				var renameEventCommand = new SlashCommandBuilder();
-				renameEventCommand.WithName(RenameCommandName);
+				renameEventCommand.WithName(RenameEventCommandName);
 				renameEventCommand.WithDescription("Renames an event to a new name");
 				renameEventCommand.AddOption("old-event-name", ApplicationCommandOptionType.String, "Name of the event", isRequired: true);
 				renameEventCommand.AddOption("new-event-name", ApplicationCommandOptionType.String, "New name of the event", isRequired: true);
+				var deleteEventCommand = new SlashCommandBuilder();
+				deleteEventCommand.WithName(DeleteEventCommandName);
+				deleteEventCommand.WithDescription("Deletes an event with the specified name");
+				deleteEventCommand.AddOption("event-name", ApplicationCommandOptionType.String, "Name of the event to be deleted", isRequired: true);
 				var listLeaderboardCommand = new SlashCommandBuilder();
 				listLeaderboardCommand.WithName(ListLeaderboardCommandName);
 				listLeaderboardCommand.WithDescription("Prints out a leaderboard for the specified event");
@@ -90,7 +95,7 @@ namespace BbegAutomator
 				var listAllLeaderboardsCommand = new SlashCommandBuilder();
 				listAllLeaderboardsCommand.WithName(ListAllLeaderboardsCommandName);
 				listAllLeaderboardsCommand.WithDescription("Prints out all leaderboards");
-				SlashCommandBuilder[] commands = { updateCommand, createEventCommand, listLeaderboardCommand, listAllLeaderboardsCommand, renameEventCommand };
+				SlashCommandBuilder[] commands = { updateCommand, createEventCommand, listLeaderboardCommand, listAllLeaderboardsCommand, renameEventCommand, deleteEventCommand };
 				try
 				{
 					foreach (var command in commands)
@@ -114,64 +119,67 @@ namespace BbegAutomator
 			string secondParameter = secondOptions?.Value.ToString();
 
 			string eventName;
-			switch (command.CommandName)
+			try
 			{
-				case UpdateCommandName:
-					await command.RespondAsync("Leaderboard updating!");
-					await Leaderboard.UpdateLeaderboardAsync(_host.Services);
-					await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
-					break;
-				case CreateEventCommandName:
-					eventName = firstParameter;
-					await command.RespondAsync($"Creating event \"{eventName}\"");
-					try
-					{
-						_config = await EventHandler.CreateEventAsync(eventName, _host.Services);
+				switch (command.CommandName)
+				{
+					case UpdateCommandName:
+						await command.RespondAsync("Leaderboard updating!");
+						await Leaderboard.UpdateLeaderboardAsync(_host.Services);
+						await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
+						break;
+					case CreateEventCommandName:
+						eventName = firstParameter;
+						await command.RespondAsync($"Creating event \"{eventName}\"");
+						_config = await EventUtils.CreateEventAsync(eventName, _host.Services);
 						await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
-					}
-					catch (EventAlreadyExistsException)
-					{
-						await command.ModifyOriginalResponseAsync(a => a.Content = $"Event \"{eventName}\" already exists!");
-					}
-					break;
-				case RenameCommandName:
-					eventName = firstParameter;
-					string newEventName = secondParameter;
-					await command.RespondAsync($"Renaming event \"{eventName}\" to \"{newEventName}\"");
-					try
-					{
-						_config = await EventHandler.RenameEventAsync(eventName, newEventName, _host.Services);
+						break;
+					case RenameEventCommandName:
+						eventName = firstParameter;
+						string newEventName = secondParameter;
+						await command.RespondAsync($"Renaming event \"{eventName}\" to \"{newEventName}\"");
+						_config = await EventUtils.RenameEventAsync(eventName, newEventName, _host.Services);
 						await command.ModifyOriginalResponseAsync(a => a.Content = $"Renamed event \"{eventName}\" to \"{newEventName}\"");
-					}
-					catch(EventDoesntExistException e)
-					{
-						await command.ModifyOriginalResponseAsync(a => a.Content = e.Message);
-					}
-					break;
-				case ListLeaderboardCommandName:
-					eventName = firstParameter;
-					var leaderboardData = await LeaderboardParser.LoadLeaderboardAsync(eventName, _host.Services);
-					if (leaderboardData == null)
-					{
-						await command.RespondAsync("Leaderboard not found!");
-					}
-					else
-					{
-						string message = await leaderboardData.Leaderboard.ToStringWithUsernamesAsync();
-						await command.RespondAsync(message);
-					}
-					break;
-				case ListAllLeaderboardsCommandName:
-					var leaderboards = await LeaderboardParser.LoadAllLeaderboardsAsync(_host.Services);
-					var builder = new StringBuilder(2048);
-					foreach (var leaderboard in leaderboards)
-					{
-						builder.AppendLine(await leaderboard.Leaderboard.ToStringWithUsernamesAsync());
-					}
-					await command.RespondAsync(builder.ToString());
-					break;
-				default:
-					throw new Exception("Command not handled!");
+						break;
+					case DeleteEventCommandName:
+						eventName = firstParameter;
+						await command.RespondAsync($"Deleting event \"{eventName}\"");
+						await EventUtils.DeleteEventAsync(eventName, _host.Services);
+						await command.RespondAsync($"Deleted event \"{eventName}\"");
+						break;
+					case ListLeaderboardCommandName:
+						eventName = firstParameter;
+						var leaderboardData = await LeaderboardParser.LoadLeaderboardAsync(eventName, _host.Services);
+						if (leaderboardData == null)
+						{
+							await command.RespondAsync("Leaderboard not found!");
+						}
+						else
+						{
+							string message = await leaderboardData.Leaderboard.ToStringWithUsernamesAsync();
+							await command.RespondAsync(message);
+						}
+						break;
+					case ListAllLeaderboardsCommandName:
+						var leaderboards = await LeaderboardParser.LoadAllLeaderboardsAsync(_host.Services);
+						var builder = new StringBuilder(2048);
+						if (leaderboards.Count == 0) await command.RespondAsync("No events exist!");
+						else
+						{
+							foreach (var leaderboard in leaderboards)
+							{
+								builder.AppendLine(await leaderboard.Leaderboard.ToStringWithUsernamesAsync());
+							}
+							await command.RespondAsync(builder.ToString());
+						}
+						break;
+					default:
+						throw new Exception("Command not handled!");
+				}
+			}
+			catch (Exception ex) when (ex is EventDoesntExistException or EventAlreadyExistsException)
+			{
+				await command.ModifyOriginalResponseAsync(a => a.Content = ex.Message);
 			}
 		}
 	}

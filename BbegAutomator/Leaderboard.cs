@@ -88,10 +88,10 @@ namespace BbegAutomator
 			var channel = await client.GetChannelAsync(config.BbegChannelId);
 			if (channel is not SocketTextChannel bbegChannel) 
 				throw new Exception("Bbeg channel is null!");
-			
-			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(eventName, serviceProvider) ?? 
-			                      new LeaderboardFileData { Leaderboard = new Leaderboard(eventName, serviceProvider)};
-			
+
+			var leaderboardFile = await LeaderboardParser.LoadLeaderboardAsync(eventName, serviceProvider);
+			if (leaderboardFile == null) throw new EventDoesntExistException(eventName);
+
 			//Going through each message
 			var messages = await ChannelUtils.GetMessages(serviceProvider, config.BumpChannelId);
 			if (skipLastMessage) messages = messages.Skip(1).ToList();

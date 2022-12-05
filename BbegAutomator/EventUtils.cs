@@ -4,10 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
+using Discord;
+using Discord.WebSocket;
 
 namespace BbegAutomator;
 
-public static class EventHandler
+public static class EventUtils
 {
 	public static async Task<Config> CreateEventAsync(string eventName, IServiceProvider serviceProvider)
 	{
@@ -16,6 +18,7 @@ public static class EventHandler
 			throw new EventAlreadyExistsException(eventName);
 		}
 
+		File.Create(FileUtils.EventNameToFilePath(eventName));
 		var config = (Config)serviceProvider.GetService(typeof(Config));
 		if (config is null) throw new Exception("DI exception");
 		config.CurrentEvent = eventName;
@@ -30,7 +33,7 @@ public static class EventHandler
 		string newFileName = FileUtils.EventNameToFilePath(newEventName);
 
 		//Checking if the event exists
-		if (GetEventNames().Any(e => e.CompareTo(eventName) == 0) == false && config.CurrentEvent.CompareTo(eventName) != 0) 
+		if (GetEventNames().Any(e => e.CompareTo(eventName) == 0) == false) 
 			throw new EventDoesntExistException(eventName);
 		
 		//Renaming the file
@@ -45,6 +48,28 @@ public static class EventHandler
 		await config.WriteConfigAsync();
 
 		return config;
+	}
+
+	public static async Task DeleteEventAsync(string eventName, IServiceProvider serviceProvider)
+	{
+		//Checking if user is trying to delete the current event
+		var config = (Config)serviceProvider.GetService(typeof(Config));
+		if (config.CurrentEvent.CompareTo(eventName) == 0) throw new ErrorDeletingEvent(); 
+
+		//Deleting the leaderboard message
+		var leaderboard = await LeaderboardParser.LoadLeaderboardAsync(eventName, serviceProvider);
+		if (leaderboard == null) throw new EventDoesntExistException(eventName);
+		if (leaderboard.MessageId != null)
+		{
+			var client = (IDiscordClient)serviceProvider.GetService(typeof(IDiscordClient));
+			var bbegChannel = await client.GetChannelAsync(config.BbegChannelId) as SocketTextChannel;
+			await bbegChannel.DeleteMessageAsync((ulong)leaderboard.MessageId);
+		}
+		
+		//Deleting the file
+		string fileName = FileUtils.EventNameToFilePath(eventName);
+		if (File.Exists(fileName) == false) throw new EventDoesntExistException(eventName);
+		File.Delete(fileName);
 	}
 
 	public static IEnumerable<string> GetEventNames()

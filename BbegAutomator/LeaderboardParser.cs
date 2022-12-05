@@ -21,10 +21,10 @@ namespace BbegAutomator
 		/// </summary>
 		/// <param name="serviceProvider"></param>
 		/// <returns></returns>
-		public static async Task<IEnumerable<LeaderboardFileData>> LoadAllLeaderboardsAsync(IServiceProvider serviceProvider)
+		public static async Task<List<LeaderboardFileData>> LoadAllLeaderboardsAsync(IServiceProvider serviceProvider)
 		{
 			var data = new List<LeaderboardFileData>();
-			foreach(string eventName in EventHandler.GetEventNames())
+			foreach(string eventName in EventUtils.GetEventNames())
 			{
 				data.Add(await LoadLeaderboardAsync(eventName, serviceProvider));
 			}
@@ -45,6 +45,7 @@ namespace BbegAutomator
 
 			var fileData = new LeaderboardFileData {Leaderboard = new Leaderboard(eventName, serviceProvider)};
 			string[] lines = await File.ReadAllLinesAsync(filePath);
+			if (lines.Length == 0) return fileData;
 			
 			bool firstLine = true;
 			foreach(string line in lines)
