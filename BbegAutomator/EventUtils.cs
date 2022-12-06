@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
+using BbegAutomator.Leaderboard;
 
 namespace BbegAutomator;
 

@@ -1,4 +1,4 @@
-﻿namespace BbegAutomator;
+﻿namespace BbegAutomator.Leaderboard;
 
 public class LeaderboardFileData
 {

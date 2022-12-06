@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
 using Discord;
 
-namespace BbegAutomator;
+namespace BbegAutomator.Leaderboard;
 
 public class Leaderboard
 {

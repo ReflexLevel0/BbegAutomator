@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using BbegAutomator.Exceptions;
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;

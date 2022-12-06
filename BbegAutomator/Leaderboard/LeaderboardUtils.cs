@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using BbegAutomator.Exceptions;
 using Discord.Rest;
 
-namespace BbegAutomator;
+namespace BbegAutomator.Leaderboard;
 
 public class LeaderboardUtils
 {
