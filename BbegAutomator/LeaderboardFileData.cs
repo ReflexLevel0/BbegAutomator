@@ -1,8 +1,7 @@
-﻿namespace BbegAutomator
+﻿namespace BbegAutomator;
+
+public class LeaderboardFileData
 {
-	public class LeaderboardFileData
-	{
-		public ulong? MessageId;
-		public Leaderboard Leaderboard;
-	}
+	public ulong? MessageId;
+	public Leaderboard Leaderboard;
 }

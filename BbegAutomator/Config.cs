@@ -3,41 +3,47 @@ using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace BbegAutomator
+namespace BbegAutomator;
+
+public class Config
 {
-	public class Config
+	public readonly ulong BumpChannelId;
+	public readonly ulong BbegChannelId;
+	public readonly ulong BumpBotId;
+	public readonly string BumpCommandString;
+	public readonly string BotToken;
+	public readonly List<ulong> LoggingIds;
+	public string CurrentEvent;
+	public readonly ulong GuildId;
+	private const string AppSettingsPath = "appsettings.json";
+
+	public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken, List<ulong> loggingIds, string currentEvent, ulong guildId)
 	{
-		public readonly ulong BumpChannelId;
-		public readonly ulong BbegChannelId;
-		public readonly ulong BumpBotId;
-		public readonly string BumpCommandString;
-		public readonly string BotToken;
-		public readonly List<ulong> LoggingIds;
-		public string CurrentEvent;
-		public readonly ulong GuildId;
-		private const string APPSETTINGS_PATH = "appsettings.json";
-
-		public Config(ulong bumpChannelId, ulong bbegChannelId, ulong bumpBotId, string bumpCommandString, string botToken, List<ulong> loggingIds, string currentEvent, ulong guildId)
-		{
-			BumpChannelId = bumpChannelId;
-			BbegChannelId = bbegChannelId;
-			BumpBotId = bumpBotId;
-			BumpCommandString = bumpCommandString;
-			BotToken = botToken;
-			LoggingIds = loggingIds;
-			CurrentEvent = currentEvent;
-			GuildId = guildId;
-		}
-
-		public static async Task<Config> GetConfigAsync()
-		{
-			return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync(APPSETTINGS_PATH));
-		}
-		
-		public async Task WriteConfigAsync()
-		{
-			string tmp = JsonConvert.SerializeObject(this);
-			await File.WriteAllTextAsync(APPSETTINGS_PATH, tmp);
-		} 
+		BumpChannelId = bumpChannelId;
+		BbegChannelId = bbegChannelId;
+		BumpBotId = bumpBotId;
+		BumpCommandString = bumpCommandString;
+		BotToken = botToken;
+		LoggingIds = loggingIds;
+		CurrentEvent = currentEvent;
+		GuildId = guildId;
 	}
+
+	/// <summary>
+	/// Gets the configuration for the program
+	/// </summary>
+	/// <returns></returns>
+	public static async Task<Config> GetConfig()
+	{
+		return JsonConvert.DeserializeObject<Config>(await File.ReadAllTextAsync(AppSettingsPath));
+	}
+		
+	/// <summary>
+	/// Updates the configuration file
+	/// </summary>
+	public async Task UpdateConfigFile()
+	{
+		string tmp = JsonConvert.SerializeObject(this);
+		await File.WriteAllTextAsync(AppSettingsPath, tmp);
+	} 
 }
