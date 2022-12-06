@@ -35,10 +35,11 @@ public class CommandUtils
 		var updateCommand = new SlashCommandBuilder();
 		updateCommand.WithName(UpdateCommandName);
 		updateCommand.WithDescription("Updates the bbeg leaderboard for the current event");
+		updateCommand.AddOption("event-name", ApplicationCommandOptionType.String, "Name of the event to be updated", isRequired: false);
 		var createEventCommand = new SlashCommandBuilder();
 		createEventCommand.WithName(CreateEventCommandName);
 		createEventCommand.WithDescription("Creates a new event (all updates will update the leaderboard for this event)");
-		createEventCommand.AddOption("name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
+		createEventCommand.AddOption("event-name", ApplicationCommandOptionType.String, "Name of the event that will be created", isRequired: true);
 		var renameEventCommand = new SlashCommandBuilder();
 		renameEventCommand.WithName(RenameEventCommandName);
 		renameEventCommand.WithDescription("Renames an event to a new name");
@@ -83,8 +84,10 @@ public class CommandUtils
 			switch (command.CommandName)
 			{
 				case UpdateCommandName:
+					eventName = firstParameter;
 					await command.RespondAsync("Leaderboard updating!");
-					await new LeaderboardUtils(_serviceProvider).UpdateLeaderboard();
+					if (eventName == null) await new LeaderboardUtils(_serviceProvider).UpdateLeaderboard();
+					else await new LeaderboardUtils(_serviceProvider).UpdateLeaderboard(eventName);
 					await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
 					break;
 				case CreateEventCommandName:
