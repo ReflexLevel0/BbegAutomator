@@ -94,8 +94,8 @@ public class LeaderboardUtils
 		var bumpChannel = await client.GetBumpChannel();
 		
 		//Loading leaderboard data
-		var leaderboardFile = await LoadLeaderboard(eventName);
-		if (leaderboardFile == null) throw new EventDoesntExistException(eventName);
+		var leaderboard = await LoadLeaderboard(eventName);
+		if (leaderboard == null) throw new EventDoesntExistException(eventName);
 
 		//Going through each message
 		var messages = await DiscordClientUtils.GetChannelMessages(bumpChannel);
@@ -108,18 +108,21 @@ public class LeaderboardUtils
 			    string.CompareOrdinal(channelMessage.Interaction.Name, _config.BumpCommandString) == 0)
 			{
 				ulong userId = channelMessage.Interaction.User.Id;
-				leaderboardFile.Leaderboard.UpdateUser(userId, 1);
+				leaderboard.Leaderboard.UpdateUser(userId, 1);
 			}
 
-			//Deleting the message
+			//Deleting the bump reply message
 			await channelMessage.DeleteAsync();
 		}
-
+		
+		//Not posting any messages or writing anything to a file if the leaderboard is empty
+		if (leaderboard.Leaderboard.IsEmpty()) return;
+		
 		//Creating a new leaderboard message if a message doesn't exist
 		ulong messageId = 0;
-		if (leaderboardFile.MessageId is null or 0)
+		if (leaderboard.MessageId is null or 0)
 		{
-			string leaderboardMessage = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+			string leaderboardMessage = await leaderboard.Leaderboard.ToStringWithUsernames();
 			if (string.IsNullOrWhiteSpace(leaderboardMessage) == false)
 			{
 				var message = await bbegChannel.SendMessageAsync(leaderboardMessage);
@@ -130,17 +133,17 @@ public class LeaderboardUtils
 		//Updating the leaderboard message if the message exists
 		else
 		{
-			if (await bbegChannel.GetMessageAsync((ulong)leaderboardFile.MessageId) is not RestUserMessage message)
+			if (await bbegChannel.GetMessageAsync((ulong)leaderboard.MessageId) is not RestUserMessage message)
 			{
 				throw new Exception("Error converting discord message to SocketUserMessage type");
 			}
-			string newContent = await leaderboardFile.Leaderboard.ToStringWithUsernames();
+			string newContent = await leaderboard.Leaderboard.ToStringWithUsernames();
 			await message.ModifyAsync(m => m.Content = newContent);
-			messageId = (ulong)leaderboardFile.MessageId;
+			messageId = (ulong)leaderboard.MessageId;
 		}
 
 		//Writing changes to the file
-		await UpdateLeaderboardFile(eventName, leaderboardFile.Leaderboard, messageId);
+		await UpdateLeaderboardFile(eventName, leaderboard.Leaderboard, messageId);
 	}
 
 	/// <summary>

@@ -14,8 +14,8 @@ public class Program
 	private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
 	private IHost _host;
-	private static readonly DiscordSocketClient Client = new();
-	private static Config _config;
+	private readonly DiscordSocketClient Client = new();
+	private Config _config;
 
 	private async Task MainAsync()
 	{
@@ -29,20 +29,19 @@ public class Program
 					.AddSingleton(Client)
 					.AddSingleton<IDiscordClient>(Client)
 					.AddSingleton(_config)).Build();
-
+		await _host.StartAsync();
+		
 		Client.Log += Log;
-
 		Client.SlashCommandExecuted += SlashCommandHandlerAsync;
 		Client.Ready += InitCommandsAsync;
-
 		await Client.LoginAsync(TokenType.Bot, _config.BotToken);
 		await Client.StartAsync();
-
+		
 		// Block this task until the program is closed.
 		await Task.Delay(-1);
 	}
 
-	public static async Task Log(LogMessage msg)
+	public async Task Log(LogMessage msg)
 	{
 		if (Client.LoginState == LoginState.LoggedIn)
 		{

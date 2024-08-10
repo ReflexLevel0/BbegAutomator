@@ -11,8 +11,7 @@ namespace BbegAutomator.Leaderboard;
 public class Leaderboard
 {
 	private readonly IServiceProvider _serviceProvider;
-	private readonly List<LeaderboardRecord> _records = new List<LeaderboardRecord>();
-	private IEnumerable<LeaderboardRecord> Records => _records;
+	private IList<LeaderboardRecord> _records = new List<LeaderboardRecord>();
 	private readonly string _name;
 
 	public Leaderboard(string name, IServiceProvider serviceProvider)
@@ -28,7 +27,7 @@ public class Leaderboard
 	/// <param name="pointsToAdd"></param>
 	public void UpdateUser(ulong id, int pointsToAdd)
 	{
-		var user = Records.FirstOrDefault(r => r.Id == id);
+		var user = _records.FirstOrDefault(r => r.Id == id);
 		if (user == null) _records.Add(new LeaderboardRecord(id, pointsToAdd));
 		else user.Points += pointsToAdd;
 	}
@@ -68,4 +67,6 @@ public class Leaderboard
 
 		return builder.ToString();
 	}
+
+	public bool IsEmpty() => _records.Count == 0;
 }
