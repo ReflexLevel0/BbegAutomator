@@ -12,6 +12,7 @@ public class EventUtils
 {
 	private readonly IServiceProvider _serviceProvider;
 	private readonly Config _config;
+	private const string DataDirectoryName = "data";
 
 	public EventUtils(IServiceProvider serviceProvider)
 	{
@@ -97,7 +98,12 @@ public class EventUtils
 	
 	public IEnumerable<string> GetEventNames()
 	{
-		var files = new DirectoryInfo("data").GetFiles();
+		if (Directory.Exists(DataDirectoryName) == false)
+		{
+			Directory.CreateDirectory(DataDirectoryName);
+		}
+		
+		var files = new DirectoryInfo(DataDirectoryName).GetFiles();
 		foreach (var file in files)
 		{
 			string name = file.Name[..^file.Extension.Length];
@@ -110,7 +116,7 @@ public class EventUtils
 	/// </summary>
 	/// <param name="eventName"></param>
 	/// <returns></returns>
-	public string EventNameToFilePath(string eventName) => $"data/{eventName}.txt";
+	public string EventNameToFilePath(string eventName) => $"{DataDirectoryName}/{eventName}.txt";
 	
 	public bool EventExists(string eventName) => GetEventNames().Any(name => string.Compare(name, eventName, StringComparison.Ordinal) == 0);
 }
