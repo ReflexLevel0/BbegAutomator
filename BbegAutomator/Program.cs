@@ -1,5 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using BbegAutomator.Leaderboard;
+using BbegAutomator.Utils;
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
@@ -10,16 +10,16 @@ namespace BbegAutomator;
 
 public class Program
 {
+	private IHost _host;
+	private readonly DiscordSocketClient Client = new();
+	private IConfig _config;
+	
 	//TODO: crash the program if an exception occurs 
 	private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
-	private IHost _host;
-	private readonly DiscordSocketClient Client = new();
-	private Config _config;
-
 	private async Task MainAsync()
 	{
-		_config = await Config.GetConfig();
+		_config = await new Config().LoadFromFile();
 
 		//Setting up dependency injection
 		_host = Host
@@ -28,7 +28,13 @@ public class Program
 				services
 					.AddSingleton(Client)
 					.AddSingleton<IDiscordClient>(Client)
-					.AddSingleton(_config)).Build();
+					.AddSingleton<IConfig>(_config)
+					.AddSingleton<ILeaderboardUtils>(sp => new LeaderboardUtils(sp))
+					.AddSingleton<ICommandUtils>(sp => new CommandUtils(sp))
+					.AddSingleton<IDiscordClientUtils>(sp => new DiscordClientUtils(sp))
+					.AddSingleton<IEventUtils>(sp => new EventUtils(sp))
+					.AddScoped<ILeaderboard>(sp => new BbegAutomator.Leaderboard.Leaderboard(sp))
+				).Build();
 		await _host.StartAsync();
 		
 		Client.Log += Log;
@@ -61,7 +67,7 @@ public class Program
 		var guild = Client.GetGuild(_config.GuildId);
 		try
 		{
-			foreach (var command in new CommandUtils(_host.Services).GetSlashCommands())
+			foreach (var command in _host.Services.GetRequiredService<ICommandUtils>().GetSlashCommands())
 			{
 				await guild.CreateApplicationCommandAsync(command.Build());
 			}
@@ -73,5 +79,5 @@ public class Program
 	}
 
 	private async Task SlashCommandHandlerAsync(SocketCommandBase command) =>
-		_config = await new CommandUtils(_host.Services).ExecuteCommand(command);
+		_config = await _host.Services.GetRequiredService<ICommandUtils>().ExecuteCommand(command);
 }

@@ -1,11 +1,5 @@
-﻿using System;
+﻿namespace BbegAutomator.Exceptions;
 
-namespace BbegAutomator.Exceptions;
-
-public class EventAlreadyExistsException : Exception
+public class EventAlreadyExistsException(string name) : Exception($"Failed to create an event. Event with name {name} already exists!")
 {
-	public EventAlreadyExistsException(string name) : base($"Failed to create an event. Event with name {name} already exists!")
-	{
-		
-	}
 }

@@ -3,5 +3,5 @@
 public class LeaderboardFileData
 {
 	public ulong? MessageId;
-	public Leaderboard Leaderboard;
+	public ILeaderboard Leaderboard;
 }

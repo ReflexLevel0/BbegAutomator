@@ -1,11 +1,5 @@
-﻿using System;
+﻿namespace BbegAutomator.Exceptions;
 
-namespace BbegAutomator.Exceptions;
-
-public class EventDoesntExistException : Exception
+public class EventDoesntExistException(string eventName) : Exception($"Event \"{eventName}\" doesn't exist!")
 {
-	public EventDoesntExistException(string eventName) : base($"Event \"{eventName}\" doesn't exist!")
-	{
-		
-	}
 }

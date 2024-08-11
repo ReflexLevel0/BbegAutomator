@@ -1,11 +1,5 @@
-﻿using System;
+﻿namespace BbegAutomator.Exceptions;
 
-namespace BbegAutomator.Exceptions;
-
-public class DependencyInjectionNullException : Exception
+public class DependencyInjectionNullException() : Exception("Dependency injection returned a null object!")
 {
-	public DependencyInjectionNullException() : base("Dependency injection returned a null object!")
-	{
-			
-	}
 }

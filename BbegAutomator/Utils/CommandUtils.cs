@@ -1,36 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using BbegAutomator.Exceptions;
 using BbegAutomator.Leaderboard;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace BbegAutomator;
+namespace BbegAutomator.Utils;
 
-public class CommandUtils
+public class CommandUtils(IServiceProvider serviceProvider) : ICommandUtils
 {
-	private readonly IServiceProvider _serviceProvider;
-	private Config _config;
 	private const string UpdateCommandName = "update";
 	private const string CreateEventCommandName = "event-create";
 	private const string RenameEventCommandName = "event-rename";
 	private const string DeleteEventCommandName = "event-delete";
 	private const string ListLeaderboardCommandName = "leaderboard-list";
 	private const string ListAllLeaderboardsCommandName = "leaderboard-list-all";
-
-	public CommandUtils(IServiceProvider serviceProvider)
-	{
-		_serviceProvider = serviceProvider;
-		_config = (Config)serviceProvider.GetService(typeof(Config));
-	}
 	
-	/// <summary>
-	/// Returns all slash commands for the bot
-	/// </summary>
-	/// <returns></returns>
 	public List<SlashCommandBuilder> GetSlashCommands()
 	{
 		var updateCommand = new SlashCommandBuilder();
@@ -59,17 +44,11 @@ public class CommandUtils
 		listAllLeaderboardsCommand.WithDescription("Prints out all leaderboards");
 		return new List<SlashCommandBuilder> { updateCommand, createEventCommand, listLeaderboardCommand, listAllLeaderboardsCommand, renameEventCommand, deleteEventCommand };
 	}
-
-	/// <summary>
-	/// Executed the specified command
-	/// </summary>
-	/// <param name="command">Command to be executed</param>
-	/// <returns></returns>
-	/// <exception cref="Exception">Thrown if unknown command is used</exception>
-	public async Task<Config> ExecuteCommand(SocketCommandBase command)
+	
+	public async Task<IConfig> ExecuteCommand(SocketCommandBase command)
 	{
-		var eventUtils = new EventUtils(_serviceProvider);
-		var leaderboardUtils = new LeaderboardUtils(_serviceProvider);
+		var eventUtils = serviceProvider.GetRequiredService<IEventUtils>();
+		var leaderboardUtils = serviceProvider.GetRequiredService<ILeaderboardUtils>();
 		
 		//Get the first and second parameter
 		var options = ((SocketSlashCommand)command).Data.Options;
@@ -79,6 +58,7 @@ public class CommandUtils
 		string secondParameter = secondOptions?.Value.ToString();
 
 		//Executing the command
+		var config = serviceProvider.GetRequiredService<IConfig>();
 		string eventName;
 		try
 		{
@@ -87,21 +67,21 @@ public class CommandUtils
 				case UpdateCommandName:
 					eventName = firstParameter;
 					await command.RespondAsync("Leaderboard updating!");
-					if (eventName == null) await new LeaderboardUtils(_serviceProvider).UpdateLeaderboard();
-					else await new LeaderboardUtils(_serviceProvider).UpdateLeaderboard(eventName);
+					if (eventName == null) await leaderboardUtils.UpdateLeaderboard();
+					else await leaderboardUtils.UpdateLeaderboard(eventName);
 					await command.ModifyOriginalResponseAsync(a => a.Content = "Leaderboard updated!");
 					break;
 				case CreateEventCommandName:
 					eventName = firstParameter;
 					await command.RespondAsync($"Creating event \"{eventName}\"");
-					_config = await eventUtils.CreateEvent(eventName);
+					config = await eventUtils.CreateEvent(eventName);
 					await command.ModifyOriginalResponseAsync(a => a.Content = $"Created event \"{eventName}\"");
 					break;
 				case RenameEventCommandName:
 					eventName = firstParameter;
 					string newEventName = secondParameter;
 					await command.RespondAsync($"Renaming event \"{eventName}\" to \"{newEventName}\"");
-					_config = await eventUtils.RenameEvent(eventName, newEventName);
+					config = await eventUtils.RenameEvent(eventName, newEventName);
 					await command.ModifyOriginalResponseAsync(a => a.Content = $"Renamed event \"{eventName}\" to \"{newEventName}\"");
 					break;
 				case DeleteEventCommandName:
@@ -112,7 +92,7 @@ public class CommandUtils
 					break;
 				case ListLeaderboardCommandName:
 					eventName = firstParameter;
-					var leaderboardData = await new LeaderboardUtils(_serviceProvider).LoadLeaderboard(eventName);
+					var leaderboardData = await leaderboardUtils.LoadLeaderboard(eventName);
 					string message = await leaderboardData.Leaderboard.ToStringWithUsernames();
 					await command.RespondAsync(message);
 					break;
@@ -141,6 +121,6 @@ public class CommandUtils
 			else await command.RespondAsync(ex.Message);
 		}
 
-		return _config;
+		return config;
 	}
 }

@@ -1,30 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using BbegAutomator.Exceptions;
 using Discord;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BbegAutomator.Leaderboard;
 
-public class Leaderboard
+public class Leaderboard(IServiceProvider serviceProvider) : ILeaderboard
 {
-	private readonly IServiceProvider _serviceProvider;
 	private IList<LeaderboardRecord> _records = new List<LeaderboardRecord>();
-	private readonly string _name;
 
-	public Leaderboard(string name, IServiceProvider serviceProvider)
-	{
-		_serviceProvider = serviceProvider;
-		_name = name;
-	}
-
-	/// <summary>
-	/// Adds <exception cref="pointsToAdd"> number of points to the user with the specified id</exception>
-	/// </summary>
-	/// <param name="id"></param>
-	/// <param name="pointsToAdd"></param>
+	public string EventName { get; set; }
+	
 	public void UpdateUser(ulong id, int pointsToAdd)
 	{
 		var user = _records.FirstOrDefault(r => r.Id == id);
@@ -47,18 +33,11 @@ public class Leaderboard
 		return builder.ToString();
 	}
 
-	/// <summary>
-	/// Converts the leaderboard to string using users' usernames'
-	/// </summary>
-	/// <returns></returns>
-	/// <exception cref="DependencyInjectionNullException"></exception>
 	public async Task<string> ToStringWithUsernames()
 	{
-		var client = (IDiscordClient)_serviceProvider.GetService(typeof(IDiscordClient));
-		if (client == null) throw new DependencyInjectionNullException();
-
+		var client = serviceProvider.GetRequiredService<IDiscordClient>();
 		var builder = new StringBuilder(1024);
-		builder.AppendLine($"Leaderboard for event \"{_name}\":");
+		builder.AppendLine($"Leaderboard for event \"{EventName}\":");
 		foreach (var r in _records)
 		{
 			var user = await client.GetUserAsync(r.Id);

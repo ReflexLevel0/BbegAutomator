@@ -1,13 +1,7 @@
 ﻿namespace BbegAutomator.Leaderboard;
 
-public class LeaderboardRecord
+public class LeaderboardRecord(ulong id, int points)
 {
-	public ulong Id { get; }
-	public int Points { get; set; }
-
-	public LeaderboardRecord(ulong id, int points)
-	{
-		Id = id;
-		Points = points;
-	}
+	public ulong Id => id;
+	public int Points { get; set; } = points;
 }
