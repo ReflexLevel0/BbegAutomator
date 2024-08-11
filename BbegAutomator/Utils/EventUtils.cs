@@ -74,12 +74,23 @@ public class EventUtils(IServiceProvider serviceProvider) : IEventUtils
 		{
 			Directory.CreateDirectory(DataDirectoryName);
 		}
-		
+
+		var config = serviceProvider.GetRequiredService<IConfig>();
+		bool currentEventReturned = false;
 		var files = new DirectoryInfo(DataDirectoryName).GetFiles();
 		foreach (var file in files)
 		{
 			string name = file.Name[..^file.Extension.Length];
+			if (currentEventReturned == false && string.CompareOrdinal(config.CurrentEvent, name) == 0)
+			{
+				currentEventReturned = true;
+			}
 			yield return name;
+		}
+
+		if (currentEventReturned == false && config.CurrentEvent.Length != 0)
+		{
+			yield return config.CurrentEvent;
 		}
 	}
 	

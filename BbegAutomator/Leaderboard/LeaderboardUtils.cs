@@ -23,14 +23,20 @@ public class LeaderboardUtils(IServiceProvider serviceProvider) : ILeaderboardUt
 	{
 		var eventUtils = serviceProvider.GetRequiredService<IEventUtils>();
 		if (eventUtils.EventExists(eventName) == false) throw new EventDoesntExistException(eventName);
-
-		//Reading the file
-		string filePath = eventUtils.EventNameToFilePath(eventName);
 		var leaderboard = serviceProvider.GetRequiredService<ILeaderboard>();
 		leaderboard.EventName = eventName;
-		var fileData = new LeaderboardFileData { Leaderboard = leaderboard };
+		var result = new LeaderboardFileData { Leaderboard = leaderboard };
+		
+		//Not loading any data into the leaderboard if the event file does not exist
+		string filePath = eventUtils.EventNameToFilePath(eventName);
+		if (File.Exists(filePath) == false)
+		{
+			return result;
+		}
+		
+		//Reading the file
 		string[] lines = await File.ReadAllLinesAsync(filePath);
-		if (lines.Length == 0) return fileData;
+		if (lines.Length == 0) return result;
 
 		//Parsing file data
 		bool firstLine = true;
@@ -38,17 +44,17 @@ public class LeaderboardUtils(IServiceProvider serviceProvider) : ILeaderboardUt
 		{
 			if (firstLine)
 			{
-				fileData.MessageId = ulong.Parse(line);
+				result.MessageId = ulong.Parse(line);
 				firstLine = false;
 			}
 			else
 			{
 				var record = ParseLine(line);
-				fileData.Leaderboard.UpdateUser(record.Id, record.Points);
+				result.Leaderboard.UpdateUser(record.Id, record.Points);
 			}
 		}
 
-		return fileData;
+		return result;
 	}
 	
 	public async Task UpdateLeaderboard(bool skipLastMessage = true)
