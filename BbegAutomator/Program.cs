@@ -11,7 +11,6 @@ namespace BbegAutomator;
 public class Program
 {
 	private IHost _host;
-	private readonly DiscordSocketClient Client = new();
 	private IConfig _config;
 	
 	//TODO: crash the program if an exception occurs 
@@ -20,14 +19,14 @@ public class Program
 	private async Task MainAsync()
 	{
 		_config = await new Config().LoadFromFile();
-
+		var client = new DiscordSocketClient();
+		
 		//Setting up dependency injection
 		_host = Host
 			.CreateDefaultBuilder()
 			.ConfigureServices((_, services) =>
 				services
-					.AddSingleton(Client)
-					.AddSingleton<IDiscordClient>(Client)
+					.AddSingleton<DiscordSocketClient>(client)
 					.AddSingleton<IConfig>(_config)
 					.AddSingleton<ILeaderboardUtils>(sp => new LeaderboardUtils(sp))
 					.AddSingleton<ICommandUtils>(sp => new CommandUtils(sp))
@@ -37,23 +36,32 @@ public class Program
 				).Build();
 		await _host.StartAsync();
 		
-		Client.Log += Log;
-		Client.SlashCommandExecuted += SlashCommandHandlerAsync;
-		Client.Ready += InitCommandsAsync;
-		await Client.LoginAsync(TokenType.Bot, _config.BotToken);
-		await Client.StartAsync();
-		
+		client.Log += Log;
+		client.SlashCommandExecuted += SlashCommandHandlerAsync;
+		client.Ready += InitCommandsAsync;
+		await client.LoginAsync(TokenType.Bot, _config.BotToken);
+		await client.StartAsync();
+
 		// Block this task until the program is closed.
-		await Task.Delay(-1);
+    while(true){
+      Console.WriteLine("\nPress Ctrl+C or ESC to shut down the program");
+      var key = Console.ReadKey();
+      if((key.Key == ConsoleKey.C && key.Modifiers == ConsoleModifiers.Control) || key.Key == ConsoleKey.Escape) {
+        break;
+      }
+    }
+
+    await client.StopAsync();
 	}
 
 	public async Task Log(LogMessage msg)
 	{
-		if (Client.LoginState == LoginState.LoggedIn)
+		var client = _host.Services.GetRequiredService<DiscordSocketClient>();
+		if (client.LoginState == LoginState.LoggedIn)
 		{
 			foreach (ulong id in _config.LoggingIds)
 			{
-				var user = await Client.GetUserAsync(id);
+				var user = await client.GetUserAsync(id);
 				await user.SendMessageAsync(msg.Message);
 			}
 		}
@@ -64,7 +72,8 @@ public class Program
 	private async Task InitCommandsAsync()
 	{
 		//Setting up app commands
-		var guild = Client.GetGuild(_config.GuildId);
+		var client = _host.Services.GetRequiredService<DiscordSocketClient>();
+		var guild = client.GetGuild(_config.GuildId);
 		try
 		{
 			foreach (var command in _host.Services.GetRequiredService<ICommandUtils>().GetSlashCommands())
