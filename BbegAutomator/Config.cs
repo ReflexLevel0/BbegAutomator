@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace BbegAutomator;
 
@@ -10,7 +9,7 @@ public class Config : IConfig
 	public ulong BumpBotId { get; set; }
 	public string BumpCommandString { get; set; }
 	public string BotToken { get; set; }
-	public List<ulong> LoggingIds { get; set; }
+	public List<ulong> LoggingIds { get; set; } = new List<ulong>();
 	public string CurrentEvent { get; set; }
 	public ulong GuildId { get; set; }
 	private const string AppSettingsPath = "appsettings.json"; 
@@ -31,8 +30,12 @@ public class Config : IConfig
 		CurrentEvent = currentEvent;
 		GuildId = guildId;
 	}
-	
-	public async Task<IConfig> LoadFromFile()
+
+  /// <summary>
+  /// Loads settings from configuration file
+  /// </summary>
+  /// <returns></returns>
+	public static async Task<IConfig> LoadFromFile()
 	{
 		string data = await File.ReadAllTextAsync(AppSettingsPath);
 		var config = JsonConvert.DeserializeObject<Config>(data);

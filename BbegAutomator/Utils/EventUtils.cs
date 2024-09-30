@@ -19,7 +19,7 @@ public class EventUtils(IServiceProvider serviceProvider) : IEventUtils
 		var config = serviceProvider.GetRequiredService<IConfig>();
 		config.CurrentEvent = eventName;
 		await config.UpdateConfigFile();
-		return await config.LoadFromFile();
+		return await Config.LoadFromFile();
 	}
 	
 	public async Task<IConfig> RenameEvent(string eventName, string newEventName)
@@ -88,7 +88,7 @@ public class EventUtils(IServiceProvider serviceProvider) : IEventUtils
 			yield return name;
 		}
 
-		if (currentEventReturned == false && config.CurrentEvent.Length != 0)
+		if (currentEventReturned == false && config.CurrentEvent != null && config.CurrentEvent.Length != 0)
 		{
 			yield return config.CurrentEvent;
 		}

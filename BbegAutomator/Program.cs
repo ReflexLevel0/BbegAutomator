@@ -12,15 +12,14 @@ public class Program
 {
 	private IHost _host;
 	private IConfig _config;
-	
-	//TODO: crash the program if an exception occurs 
+
 	private static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
 	private async Task MainAsync()
 	{
-		_config = await new Config().LoadFromFile();
+		_config = await Config.LoadFromFile();
 		var client = new DiscordSocketClient();
-		
+
 		//Setting up dependency injection
 		_host = Host
 			.CreateDefaultBuilder()
@@ -33,9 +32,9 @@ public class Program
 					.AddSingleton<IDiscordClientUtils>(sp => new DiscordClientUtils(sp))
 					.AddSingleton<IEventUtils>(sp => new EventUtils(sp))
 					.AddScoped<ILeaderboard>(sp => new BbegAutomator.Leaderboard.Leaderboard(sp))
-				).Build();
+			).Build();
 		await _host.StartAsync();
-		
+
 		client.Log += Log;
 		client.SlashCommandExecuted += SlashCommandHandlerAsync;
 		client.Ready += InitCommandsAsync;
@@ -43,15 +42,17 @@ public class Program
 		await client.StartAsync();
 
 		// Block this task until the program is closed.
-    while(true){
-      Console.WriteLine("\nPress Ctrl+C or ESC to shut down the program");
-      var key = Console.ReadKey();
-      if((key.Key == ConsoleKey.C && key.Modifiers == ConsoleModifiers.Control) || key.Key == ConsoleKey.Escape) {
-        break;
-      }
-    }
+		while (true)
+		{
+			Console.WriteLine("\nPress ESC to shut down the program");
+			var key = Console.ReadKey();
+			if (key.Key == ConsoleKey.Escape)
+			{
+				break;
+			}
+		}
 
-    await client.StopAsync();
+		await client.StopAsync();
 	}
 
 	public async Task Log(LogMessage msg)
