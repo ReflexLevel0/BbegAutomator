@@ -40,18 +40,7 @@ public class Program
 		client.Ready += InitCommandsAsync;
 		await client.LoginAsync(TokenType.Bot, _config.BotToken);
 		await client.StartAsync();
-
-		// Block this task until the program is closed.
-		while (true)
-		{
-			Console.WriteLine("\nPress ESC to shut down the program");
-			var key = Console.ReadKey();
-			if (key.Key == ConsoleKey.Escape)
-			{
-				break;
-			}
-		}
-
+		await _host.WaitForShutdownAsync();
 		await client.StopAsync();
 	}
 
